@@ -1,10 +1,12 @@
-GOOD
-hr-updates@google.com
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+GOOD PAYLOAD
+Sender: hr-updates@google.com
 
-Invitation: Quarterly All-Hands Meeting - Q4 2025
+Subject Line: Invitation: Quarterly All-Hands Meeting - Q4 2025
 
-Received-SPF: pass (google.com: domain of hr-updates@google.com designates 209.85.220.41 as permitted sender); DKIM-Signature: v=1; a=rsa-sha256; d=google.com; s=20230601;
+Email Headers: Received-SPF: pass (google.com: domain of hr-updates@google.com designates 209.85.220.41 as permitted sender); DKIM-Signature: v=1; a=rsa-sha256; d=google.com; s=20230601;
 
+Body:
 Hi Team,
 
 This is a reminder about our upcoming Q4 All-Hands meeting scheduled for next Friday at 10:00 AM PST.
@@ -21,13 +23,14 @@ Human Resources Team
 
 ---------------------------------------------------------------------------------------------------------------------------------------
 
-BAD
-security-alert@goggle-support-team.com
+BAD PAYLOAD
+Sender: security-alert@goggle-support-team.com
 
-FINAL NOTICE: Your Account Will Be Deleted in 2 Hours
+Subject Line: FINAL NOTICE: Your Account Will Be Deleted in 2 Hours
 
-Received-SPF: fail (domain of goggle-support-team.com does not designate 192.168.1.55 as permitted sender) client-ip=192.168.1.55; DKIM-Signature: none; X-Mailer: PHP/7.4.3
+Email Headers: Received-SPF: fail (domain of goggle-support-team.com does not designate 192.168.1.55 as permitted sender) client-ip=192.168.1.55; DKIM-Signature: none; X-Mailer: PHP/7.4.3
 
+Body:
 Dear Customer,
 
 We have detected unusual activity on your account. Due to new security regulations, you must verify your identity immediately or your account will be permanently closed.
@@ -37,4 +40,5 @@ CLICK HERE NOW TO RESTORE ACCESS: http://bit.ly/secure-login-fake
 Failure to act within 2 hours will result in total data loss.
 
 Regards,
+
 Security Admin
