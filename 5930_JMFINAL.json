@@ -1,0 +1,433 @@
+{
+  "name": "5930 FINAL",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "87d8ef97-3fd6-4697-9670-afd0810e6f95",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -672,
+        2944
+      ],
+      "id": "575a65a7-a634-4204-af08-cd11fb54da70",
+      "name": "Email Entry2",
+      "webhookId": "87d8ef97-3fd6-4697-9670-afd0810e6f95"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Run Once for All Items\nconst item = $input.item;\n\n// Ollama output comes in as a STREAM string.\n// Example:\n// {\"model\":\"...\",\"response\":\"LOW\"}{\"model\":\"...\",\"response\":\"...\"}\nconst dataStr = String(item.json.data || '').trim();\n\n// Look for EXACT match of LOW, MEDIUM, or HIGH (case-insensitive)\nconst match = dataStr.match(/\\b(LOW|MEDIUM|HIGH)\\b/i);\n\nlet rawText = '';\nlet risk = 'UNKNOWN';\n\nif (match) {\n  rawText = match[1];\n  risk = match[1].toUpperCase();\n}\n\n// Save results\nitem.json.raw_risk_response = rawText;\nitem.json.risk_level = risk;\n\nreturn item;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        2848
+      ],
+      "id": "251d4ebc-bf2e-41f0-b31e-646c9e4d338b",
+      "name": "organization2"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/imagen-4.0-generate-preview-06-06",
+          "mode": "list",
+          "cachedResultName": "models/imagen-4.0-generate-preview-06-06"
+        },
+        "prompt": "={{\n`Create a meme-style image with a bold, exaggerated red warning theme.\n\nMOST IMPORTANTLY: BE FUNNY\nMake it look like a dramatic cyber-security meme.\nInclude visual elements such as:\n- A glowing red warning sign\n- Pixelated skull or exclamation mark\n- Red glitch effects\n- Hacker terminal background or digital fire\n\nTone:\n- Dramatic\n- Funny but urgent\n- Over-the-top “you are so screwed” meme energy\n\nOverlay big meme text at the top:\n\"PHISHING ATTEMPT DETECTED\"\n\nOverlay meme text at the bottom:\n\"DO NOT CLICK ANYTHING\"\n\nMake the whole meme visually intense and eye-catching. No real logos.`\n}}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        2896
+      ],
+      "id": "1ed78d32-d668-4993-8e0b-046e0a00911b",
+      "name": "Generate an image4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6FtxrsZVEtdAoaFk",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/imagen-4.0-fast-generate-001",
+          "mode": "list",
+          "cachedResultName": "models/imagen-4.0-fast-generate-001"
+        },
+        "prompt": "={{\n`Create a meme-style image with a comforting, humorous green safety theme.\n\nMOST IMPORTANTLY: BE FUNNY\n\nMake it look like a wholesome security meme.\nInclude visual elements such as:\n- A glowing green shield\n- Happy checkmark\n- Soft green digital glow\n- Cartoonish “everything is fine” vibe\n\nTone:\n- Funny\n- Chill\n- Lighthearted reassurance\n\nOverlay big meme text at the top:\n\"ALL GOOD!\"\n\nOverlay meme text at the bottom:\n\"THIS EMAIL LOOKS SAFE\"\n\nMake the entire meme cute, clean, and friendly. No real-world logos.`\n}}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        3200
+      ],
+      "id": "9fc202c3-c566-4897-8333-47969481ceff",
+      "name": "Generate an image5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6FtxrsZVEtdAoaFk",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---------------------------------------------------------\n// 1. GET THE IMAGE (Handles Binary & JSON formats)\n// ---------------------------------------------------------\nconst item = $input.item;\nlet base64String = \"\";\n\n// CHECK 1: Is it in the \"Binary\" tab? (Standard for n8n Image Nodes)\n// n8n usually names the binary property 'data'\nif (item.binary && item.binary.data) {\n    base64String = item.binary.data.data;\n}\n// CHECK 2: Is it in the JSON 'base64' field?\nelse if (item.json.base64) {\n    base64String = item.json.base64;\n}\n// CHECK 3: Is it nested in 'predictions' (HTTP Request method)?\nelse if (item.json.predictions && item.json.predictions[0]) {\n    base64String = item.json.predictions[0].bytesBase64Encoded;\n}\n\n// If we still have nothing, use a transparent placeholder so the report doesn't break\nif (!base64String) {\n    base64String = \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=\";\n}\n\n// ---------------------------------------------------------\n// 2. GET THE TEXT DATA (Risk Score & Analysis)\n// ---------------------------------------------------------\nlet riskData = {};\n\ntry {\n    // Attempt to grab text data from the 'Merge' node\n    // MAKE SURE YOUR MERGE NODE IS NAMED 'Merge'\n    riskData = $('Merge2').first().json;\n} catch (e) {\n    // Fallback: use current JSON if Merge lookup fails\n    riskData = item.json;\n}\n\n// Clean up Perplexity analysis\nconst analysisText = (riskData.explanation || riskData.choices?.[0]?.message?.content || \"Analysis pending...\").replace(/\\n/g, '<br>');\n\n// ---------------------------------------------------------\n// 3. GENERATE HTML\n// ---------------------------------------------------------\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #334155; padding: 40px; }\n    .container { max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); overflow: hidden; }\n    .header { \n      background: ${riskData.risk_level === 'LOW' ? '#10b981' : '#ef4444'}; \n      padding: 30px; text-align: center; color: white; \n    }\n    .badge { background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; }\n    .visual-box { text-align: center; padding: 30px; background: #f1f5f9; }\n    \n    /* Image Styling */\n    img { \n      width: 300px; height: 300px; object-fit: cover; border-radius: 12px; \n      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 4px solid white;\n    }\n    \n    .content { padding: 30px; }\n    .analysis-box { background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 15px; margin-top: 10px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Threat Assessment</h1>\n      <span class=\"badge\">RISK: ${riskData.risk_level || \"UNKNOWN\"}</span>\n    </div>\n\n    <div class=\"visual-box\">\n      <!-- The Image Source -->\n      <img src=\"data:image/png;base64,${base64String}\" alt=\"AI Visual\">\n    </div>\n\n    <div class=\"content\">\n      <h3>🛡️ Expert Analysis</h3>\n      <div class=\"analysis-box\">${analysisText}</div>\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn { html_content: html };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        3088
+      ],
+      "id": "fb329451-d162-47bc-b250-243411d6c2ea",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html_content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1664,
+        3088
+      ],
+      "id": "25fe88f5-c946-4b72-bb0f-9ef9e5d1a05d",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "qwen3:8b"
+            },
+            {
+              "name": "prompt",
+              "value": "={{\n  `You are a cybersecurity classifier.\n\nRead the following email and classify its phishing risk as exactly ONE of:\nLOW\nMEDIUM\nHIGH\n\nYou MUST respond ONLY with a single JSON object in this exact format:\n\n{\"risk_level\": \"LOW\"}\n\nAllowed values for \"risk_level\": \"LOW\", \"MEDIUM\", \"HIGH\".\nDo NOT include any other text, explanation, or fields outside this JSON.\n\nEMAIL CONTENT:\nFrom: ${$json.body.sender ?? \"\"}\nSubject: ${$json.body.subject ?? \"\"}\nHeaders: ${$json.body.headers ?? \"\"}\n\nBody:\n${$json.body.body ?? \"\"}`\n}}\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f437f0a4-61c5-4271-9ae1-ae4e0b97a863",
+      "name": "Local LLM (OLLAMA)2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -160,
+        2720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  // Convert the entire email body object into a text block\n  item.json.email_text = JSON.stringify(item.json.body, null, 2);\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        2720
+      ],
+      "id": "d750883c-1b3d-488b-bcfb-e6a538337aec",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "model": "sonar-reasoning-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "You are a cybersecurity expert. You analyze emails for phishing risk.\n",
+              "role": "system"
+            },
+            {
+              "content": "={{\n`Analyze the following email and explain in 3 bullet points why it may be safe or suspicious.\n\nFrom: ${$json.body.sender ?? \"\"}\nSubject: ${$json.body.subject ?? \"\"}\nHeaders: ${$json.body.headers ?? \"\"}\n\nBody:\n${$json.body.body ?? \"\"}`\n}}\n"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        3056
+      ],
+      "id": "ba2b4e6a-2fb1-47ee-93d1-d238aa4026f0",
+      "name": "Message a model1",
+      "credentials": {
+        "perplexityApi": {
+          "id": "ywRw9lqs45mQvbsT",
+          "name": "Perplexity account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{\n`You are a cybersecurity incident triage assistant.\n\nYou receive two things:\n1) A LOCAL MODEL classification from Ollama\n2) A CLOUD ANALYSIS from Perplexity\n\nLocal model classification:\n${$node[\"organization2\"].json.risk_level}\n\nCloud analysis:\n${$node[\"Message a model1\"].json.choices[0].message.content}\n\nReturn ONE JSON object ONLY:\n{\n  \"risk_level\": \"LOW | MEDIUM | HIGH\",\n  \"color\": \"green | yellow | red\",\n  \"summary\": \"2–4 sentences\",\n  \"recommendation\": \"one short sentence\"\n}\n\nNo extra text.`\n}}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        464,
+        2784
+      ],
+      "id": "fdef3209-2344-4409-a4e5-9b6984296dba",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        3040
+      ],
+      "id": "81e18132-606f-4781-bfdf-044386c5eebd",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "6RiKlOxHgsuc0Naf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        208,
+        3040
+      ],
+      "id": "bacc35db-d758-4a70-bc77-7adb4ac22d91",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ededa7de-8fcf-42df-8e3b-d930f89d4c3e",
+              "leftValue": "={{ $('Merge2').item.json.risk_level }}",
+              "rightValue": "HIGH",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        3024
+      ],
+      "id": "194c8e9c-0e0f-43b3-b124-7f7e43b57b4a",
+      "name": "If2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Entry2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "organization2": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image5": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local LLM (OLLAMA)2": {
+      "main": [
+        [
+          {
+            "node": "organization2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Local LLM (OLLAMA)2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Generate an image4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate an image5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "ece8efaf-3adf-4ed6-81ed-7f9350faee8c",
+  "meta": {
+    "instanceId": "6bd7fa5ef43190bffbae13b92344df1ad1f11b0312cc60fc6e3947319532582a"
+  },
+  "id": "dgMJz9FXSkWcJqqH",
+  "tags": []
+}

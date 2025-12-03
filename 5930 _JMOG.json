@@ -1,0 +1,443 @@
+{
+  "name": "5930 - OG",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "87d8ef97-3fd6-4697-9670-afd0810e6f95",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        -80
+      ],
+      "id": "5f763f0c-9b38-4063-83ae-121e17e3a523",
+      "name": "Email Entry",
+      "webhookId": "87d8ef97-3fd6-4697-9670-afd0810e6f95"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        576,
+        -96
+      ],
+      "id": "d6756161-f899-4c9e-a2ae-f00d8ccb366f",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9c8460a5-8de0-4b74-9768-d05ed1af0b2e",
+              "leftValue": "={{ $('organization').item.json.risk_level }}",
+              "rightValue": "LOW",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        -64
+      ],
+      "id": "f24efe15-4508-40b6-9f63-321c5c526c1a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Run Once for All Items\nconst item = $input.item;\n\n// Ollama output comes in as a STREAM string.\n// Example:\n// {\"model\":\"...\",\"response\":\"LOW\"}{\"model\":\"...\",\"response\":\"...\"}\nconst dataStr = String(item.json.data || '').trim();\n\n// Look for EXACT match of LOW, MEDIUM, or HIGH (case-insensitive)\nconst match = dataStr.match(/\\b(LOW|MEDIUM|HIGH)\\b/i);\n\nlet rawText = '';\nlet risk = 'UNKNOWN';\n\nif (match) {\n  rawText = match[1];\n  risk = match[1].toUpperCase();\n}\n\n// Save results\nitem.json.raw_risk_response = rawText;\nitem.json.risk_level = risk;\n\nreturn item;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        -320
+      ],
+      "id": "ab490dcb-14b8-4934-92d9-00fb48f3f212",
+      "name": "organization"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a7e8e19f-9e0a-4c0e-b522-b09583d122df",
+              "name": "comfyui_prompt",
+              "value": "MEME STYLE. GREEN SAFETY, CLEAN,",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        176
+      ],
+      "id": "95562b8a-5707-455f-b9de-9377966a6e0e",
+      "name": "green, safe"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ee5ad94-540c-4e6c-9f50-c57cf14784b4",
+              "name": "comfyui_prompt",
+              "value": "MEME STYLE red warning, DANGER, 3d render, dark background, 4k",
+              "type": "string"
+            },
+            {
+              "id": "7a950cf2-e060-4d0e-916d-67cc0e343d8d",
+              "name": "risk_level",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        -272
+      ],
+      "id": "221bbac1-d685-46b2-a4be-f29fb043685b",
+      "name": "red, danger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "perplexityApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"sonar\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a cybersecurity expert. Briefly explain in 3 bullet points why this email is safe or suspicious.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Sender:{{ $json.body.sender }} \\nSubject:{{ $json.body.subject }}\\nBody: {{ $json.body }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -32,
+        144
+      ],
+      "id": "d11a87b8-8a61-4d62-8372-1c9d22c86e48",
+      "name": "PERPLEXITY PRO ",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Tsk8hwIil7NMJI0x",
+          "name": "Header Auth account"
+        },
+        "perplexityApi": {
+          "id": "ywRw9lqs45mQvbsT",
+          "name": "Perplexity account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/imagen-4.0-generate-preview-06-06",
+          "mode": "list",
+          "cachedResultName": "models/imagen-4.0-generate-preview-06-06"
+        },
+        "prompt": "={{ $json.comfyui_prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        -128
+      ],
+      "id": "ba92eb9e-63ce-47ac-9dab-47d26f3da981",
+      "name": "Generate an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6FtxrsZVEtdAoaFk",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/imagen-4.0-fast-generate-001",
+          "mode": "list",
+          "cachedResultName": "models/imagen-4.0-fast-generate-001"
+        },
+        "prompt": "={{ $json.comfyui_prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        176
+      ],
+      "id": "6e557340-e6c9-4c2a-ba93-6c4166284b7d",
+      "name": "Generate an image1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6FtxrsZVEtdAoaFk",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---------------------------------------------------------\n// 1. GET THE IMAGE (Handles Binary & JSON formats)\n// ---------------------------------------------------------\nconst item = $input.item;\nlet base64String = \"\";\n\n// CHECK 1: Is it in the \"Binary\" tab? (Standard for n8n Image Nodes)\n// n8n usually names the binary property 'data'\nif (item.binary && item.binary.data) {\n    base64String = item.binary.data.data;\n}\n// CHECK 2: Is it in the JSON 'base64' field?\nelse if (item.json.base64) {\n    base64String = item.json.base64;\n}\n// CHECK 3: Is it nested in 'predictions' (HTTP Request method)?\nelse if (item.json.predictions && item.json.predictions[0]) {\n    base64String = item.json.predictions[0].bytesBase64Encoded;\n}\n\n// If we still have nothing, use a transparent placeholder so the report doesn't break\nif (!base64String) {\n    base64String = \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=\";\n}\n\n// ---------------------------------------------------------\n// 2. GET THE TEXT DATA (Risk Score & Analysis)\n// ---------------------------------------------------------\nlet riskData = {};\n\ntry {\n    // Attempt to grab text data from the 'Merge' node\n    // MAKE SURE YOUR MERGE NODE IS NAMED 'Merge'\n    riskData = $('Merge').first().json;\n} catch (e) {\n    // Fallback: use current JSON if Merge lookup fails\n    riskData = item.json;\n}\n\n// Clean up Perplexity analysis\nconst analysisText = (riskData.explanation || riskData.choices?.[0]?.message?.content || \"Analysis pending...\").replace(/\\n/g, '<br>');\n\n// ---------------------------------------------------------\n// 3. GENERATE HTML\n// ---------------------------------------------------------\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #334155; padding: 40px; }\n    .container { max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); overflow: hidden; }\n    .header { \n      background: ${riskData.risk_level === 'LOW' ? '#10b981' : '#ef4444'}; \n      padding: 30px; text-align: center; color: white; \n    }\n    .badge { background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; }\n    .visual-box { text-align: center; padding: 30px; background: #f1f5f9; }\n    \n    /* Image Styling */\n    img { \n      width: 300px; height: 300px; object-fit: cover; border-radius: 12px; \n      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 4px solid white;\n    }\n    \n    .content { padding: 30px; }\n    .analysis-box { background: #f8fafc; border-left: 4px solid #cbd5e1; padding: 15px; margin-top: 10px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>Threat Assessment</h1>\n      <span class=\"badge\">RISK: ${riskData.risk_level || \"UNKNOWN\"}</span>\n    </div>\n\n    <div class=\"visual-box\">\n      <!-- The Image Source -->\n      <img src=\"data:image/png;base64,${base64String}\" alt=\"AI Visual\">\n    </div>\n\n    <div class=\"content\">\n      <h3>🛡️ Expert Analysis</h3>\n      <div class=\"analysis-box\">${analysisText}</div>\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn { html_content: html };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        64
+      ],
+      "id": "205c4922-6441-4f71-a8b4-c9078e7ad212",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html_content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1632,
+        64
+      ],
+      "id": "ccec4b13-907a-4a9e-8c22-d74a13f71484",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "qwen3:8b"
+            },
+            {
+              "name": "prompt",
+              "value": "={{\n  `You are a cybersecurity classifier.\n\nRead the following email and classify its phishing risk as exactly ONE of:\nLOW\nMEDIUM\nHIGH\n\nYou MUST respond ONLY with a single JSON object in this exact format:\n\n{\"risk_level\": \"LOW\"}\n\nAllowed values for \"risk_level\": \"LOW\", \"MEDIUM\", \"HIGH\".\nDo NOT include any other text, explanation, or fields outside this JSON.\n\nEMAIL CONTENT:\nFrom: ${$json.body.sender ?? \"\"}\nSubject: ${$json.body.subject ?? \"\"}\nHeaders: ${$json.body.headers ?? \"\"}\n\nBody:\n${$json.body.body ?? \"\"}`\n}}\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f19e11a6-7339-4dd4-a252-4f3f0f75a316",
+      "name": "Local LLM (OLLAMA)1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        96,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  // Convert the entire email body object into a text block\n  item.json.email_text = JSON.stringify(item.json.body, null, 2);\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -512
+      ],
+      "id": "486c0037-9df7-4e7c-84cb-4652d46a4f90",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Entry": {
+      "main": [
+        [
+          {
+            "node": "PERPLEXITY PRO ",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "organization": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "red, danger",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "green, safe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PERPLEXITY PRO ": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "red, danger": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "green, safe": {
+      "main": [
+        [
+          {
+            "node": "Generate an image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local LLM (OLLAMA)1": {
+      "main": [
+        [
+          {
+            "node": "organization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Local LLM (OLLAMA)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "3d76f405-1c42-4958-afa3-287272c8ad48",
+  "meta": {
+    "instanceId": "6bd7fa5ef43190bffbae13b92344df1ad1f11b0312cc60fc6e3947319532582a"
+  },
+  "id": "EerZHCDKqYblPpVv",
+  "tags": []
+}
