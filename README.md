@@ -18,3 +18,5 @@ Features:
   HTML Render Node – Wraps everything into a clean, styled “Threat Assessment” card.
 
   Webhook Response – Returns a full HTML page ready for your dashboard or iframe.
+
+I have three files that basically show how i refined the workflow from my original idea.
